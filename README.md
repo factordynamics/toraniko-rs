@@ -3,6 +3,7 @@
 A high-performance Rust implementation of the Toraniko characteristic factor model for quantitative equity trading.
 
 [![CI](https://github.com/factordynamics/toraniko-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/factordynamics/toraniko-rs/actions/workflows/ci.yml)
+[![Crates.io](https://img.shields.io/crates/v/toraniko.svg)](https://crates.io/crates/toraniko)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Overview
