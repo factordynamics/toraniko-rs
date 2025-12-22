@@ -1835,7 +1835,7 @@ dependencies = [
 
 [[package]]
 name = "toraniko"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "toraniko-math",
  "toraniko-model",
@@ -1847,7 +1847,7 @@ dependencies = [
 
 [[package]]
 name = "toraniko-math"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "approx",
  "criterion",
@@ -1860,7 +1860,7 @@ dependencies = [
 
 [[package]]
 name = "toraniko-model"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "approx",
  "criterion",
@@ -1875,7 +1875,7 @@ dependencies = [
 
 [[package]]
 name = "toraniko-primitives"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "chrono",
  "derive_more",
@@ -1885,7 +1885,7 @@ dependencies = [
 
 [[package]]
 name = "toraniko-styles"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "polars",
  "thiserror",
@@ -1895,7 +1895,7 @@ dependencies = [
 
 [[package]]
 name = "toraniko-traits"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ndarray",
  "polars",
@@ -1904,7 +1904,7 @@ dependencies = [
 
 [[package]]
 name = "toraniko-utils"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "polars",
  "thiserror",
