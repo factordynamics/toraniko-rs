@@ -1834,6 +1834,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "toraniko"
+version = "0.1.0"
+dependencies = [
+ "toraniko-math",
+ "toraniko-model",
+ "toraniko-primitives",
+ "toraniko-styles",
+ "toraniko-traits",
+ "toraniko-utils",
+]
+
+[[package]]
 name = "toraniko-math"
 version = "0.1.0"
 dependencies = [

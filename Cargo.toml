@@ -51,6 +51,7 @@ codegen-units = 1
 
 [workspace.dependencies]
 # Internal crates
+toraniko = { version = "0.1.0", path = "crates/toraniko", default-features = false }
 toraniko-primitives = { version = "0.1.0", path = "crates/primitives" }
 toraniko-traits = { version = "0.1.0", path = "crates/traits" }
 toraniko-math = { version = "0.1.0", path = "crates/math" }
