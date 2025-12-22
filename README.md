@@ -33,6 +33,18 @@ Where:
 - **Data Utilities**: Forward-fill, smoothing, top-N selection
 - **High Performance**: Optimized for large universes (3000+ stocks)
 
+## Performance
+
+Single-day WLS factor estimation (11 sectors, 5 styles, M1 MacBook):
+
+| Assets | Python | Rust | Speedup |
+|--------|--------|------|---------|
+| 1,000 | 1.2 ms | 74 μs | **16x** |
+| 3,000 | 10 ms | 222 μs | **46x** |
+| 5,000 | 25 ms | 538 μs | **47x** |
+
+Run `just bench` for full benchmarks.
+
 ## Crate Structure
 
 | Crate | Description |
