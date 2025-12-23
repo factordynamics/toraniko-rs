@@ -78,3 +78,8 @@ rstest = "0.24"
 approx = "0.5"
 criterion = { version = "0.5", features = ["html_reports"] }
 rand = "0.8"
+
+# Async runtime and HTTP
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+yahoo_finance_api = "4.1"
+time = "0.3"

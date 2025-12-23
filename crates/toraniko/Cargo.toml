@@ -22,6 +22,15 @@ toraniko-styles = { workspace = true, optional = true }
 toraniko-model = { workspace = true, optional = true }
 toraniko-utils = { workspace = true, optional = true }
 
+[dev-dependencies]
+polars = { workspace = true, features = ["strings", "csv", "fmt"] }
+rand = { workspace = true }
+rand_distr = "0.4"
+chrono = { workspace = true }
+tokio = { workspace = true }
+yahoo_finance_api = { workspace = true }
+time = { workspace = true }
+
 [features]
 default = ["full"]
 full = ["primitives", "traits", "math", "styles", "model", "utils"]
@@ -32,3 +41,23 @@ math = ["dep:toraniko-math"]
 styles = ["dep:toraniko-styles"]
 model = ["dep:toraniko-model"]
 utils = ["dep:toraniko-utils"]
+
+[[example]]
+name = "style_factors"
+required-features = ["full"]
+
+[[example]]
+name = "factor_returns"
+required-features = ["full"]
+
+[[example]]
+name = "data_utilities"
+required-features = ["full"]
+
+[[example]]
+name = "full_pipeline"
+required-features = ["full"]
+
+[[example]]
+name = "yahoo_finance"
+required-features = ["full"]
