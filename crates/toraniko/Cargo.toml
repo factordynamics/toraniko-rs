@@ -22,6 +22,12 @@ toraniko-styles = { workspace = true, optional = true }
 toraniko-model = { workspace = true, optional = true }
 toraniko-utils = { workspace = true, optional = true }
 
+# CLI dependencies (used by examples and bin)
+polars = { workspace = true, features = ["strings", "csv", "fmt"], optional = true }
+tokio = { workspace = true, optional = true }
+yahoo_finance_api = { workspace = true, optional = true }
+time = { workspace = true, optional = true }
+
 [dev-dependencies]
 polars = { workspace = true, features = ["strings", "csv", "fmt"] }
 rand = { workspace = true }
@@ -34,6 +40,7 @@ time = { workspace = true }
 [features]
 default = ["full"]
 full = ["primitives", "traits", "math", "styles", "model", "utils"]
+cli = ["full", "dep:polars", "dep:tokio", "dep:yahoo_finance_api", "dep:time"]
 
 primitives = ["dep:toraniko-primitives"]
 traits = ["dep:toraniko-traits"]
@@ -61,3 +68,7 @@ required-features = ["full"]
 [[example]]
 name = "yahoo_finance"
 required-features = ["full"]
+
+[[bin]]
+name = "analyze"
+required-features = ["cli"]

@@ -99,3 +99,14 @@ example-pipeline:
 
 # Run all examples
 examples: example-yahoo example-style example-factor example-utils example-pipeline
+
+# ============================================================================
+# Factor Attribution Analysis
+# ============================================================================
+
+# Analyze factor attribution for a stock (default: 5 years)
+# Usage: just analyze SYMBOL [YEARS]
+# Example: just analyze UNH
+# Example: just analyze AAPL 3
+analyze symbol years="5":
+    cargo run --package toraniko --bin analyze --features cli -- {{symbol}} --years {{years}}

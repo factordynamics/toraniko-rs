@@ -139,6 +139,40 @@ let smoothed = smooth_features(df.lazy(), &["returns"], "date", "symbol", 5);
 let universe = top_n_by_group(df.lazy(), 1000, "market_cap", &["date"], true);
 ```
 
+## Quick Analysis
+
+Analyze factor attribution for any stock using Yahoo Finance data:
+
+```bash
+just analyze UNH        # Default 5-year analysis
+just analyze AAPL 3     # 3-year analysis
+```
+
+Example output:
+```
+================================================================================
+FACTOR ATTRIBUTION ANALYSIS: UNH
+================================================================================
+Period: 2022-08-30 to 2025-12-22
+Total Return:   +65.52%
+--------------------------------------------------------------------------------
+Factor               Exposure     Factor Ret   Contribution
+-------------------- ------------ ------------ --------------
+Market                  1.000         62.82%         62.82%
+Healthcare              1.000         18.79%         18.79%
+Size                    0.137       -198.91%        -27.32%
+Value                  -0.130       -563.61%         73.08%
+Momentum               -0.419         10.60%         -4.44%
+Idiosyncratic               -              -        -57.41%
+--------------------------------------------------------------------------------
+SUMMARY:
+  Factor-Explained Return:  +122.93%
+  Idiosyncratic Return:      -57.41%
+================================================================================
+```
+
+The idiosyncratic return (-57.41%) represents the portion of UNH's return not explained by the factors. This is large because toraniko-rs is a framework for building factor models, not a pre-built model itself. The demo uses crude proxies from Yahoo Finance data and only 3 style factors across 30 stocks. A well-specified production model with proper fundamental data, more factors, and a larger universe should minimize this residual component.
+
 ## Benchmarks
 
 Run benchmarks with:

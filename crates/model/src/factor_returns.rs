@@ -157,7 +157,11 @@ impl ReturnsEstimator for FactorReturnsEstimator {
                 AnyValue::Date(d) => d,
                 _ => continue,
             };
-            let date_val = Date::from_num_days_from_ce_opt(date_i32).unwrap_or_default();
+            // Polars Date stores days since Unix epoch (1970-01-01)
+            // Unix epoch is CE day 719163 (days from year 1 to 1970-01-01)
+            const UNIX_EPOCH_CE_DAYS: i32 = 719_163;
+            let date_val =
+                Date::from_num_days_from_ce_opt(UNIX_EPOCH_CE_DAYS + date_i32).unwrap_or_default();
 
             // Filter the original data for this date using the raw i32 value
             let date_filter = joined

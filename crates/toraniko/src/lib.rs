@@ -25,3 +25,12 @@ pub use toraniko_model as model;
 #[cfg(feature = "utils")]
 #[doc(inline)]
 pub use toraniko_utils as utils;
+// CLI feature dependencies - these are used by the analyze binary, not the library itself
+#[cfg(feature = "cli")]
+use polars as _;
+#[cfg(feature = "cli")]
+use time as _;
+#[cfg(feature = "cli")]
+use tokio as _;
+#[cfg(feature = "cli")]
+use yahoo_finance_api as _;
