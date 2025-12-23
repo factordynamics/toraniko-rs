@@ -72,3 +72,30 @@ watch-test:
 # Watches for changes and checks
 watch-check:
     cargo watch -x "clippy --workspace --all-targets"
+
+# ============================================================================
+# Examples
+# ============================================================================
+
+# Run the Yahoo Finance example (fetches real market data)
+example-yahoo:
+    cargo run --package toraniko --example yahoo_finance
+
+# Run the style factors example
+example-style:
+    cargo run --package toraniko --example style_factors
+
+# Run the factor returns example
+example-factor:
+    cargo run --package toraniko --example factor_returns
+
+# Run the data utilities example
+example-utils:
+    cargo run --package toraniko --example data_utilities
+
+# Run the full pipeline example
+example-pipeline:
+    cargo run --package toraniko --example full_pipeline
+
+# Run all examples
+examples: example-yahoo example-style example-factor example-utils example-pipeline
