@@ -25,7 +25,7 @@ toraniko-utils = { workspace = true, optional = true }
 [dev-dependencies]
 polars = { workspace = true, features = ["strings", "csv", "fmt"] }
 rand = { workspace = true }
-rand_distr = "0.4"
+rand_distr = { workspace = true }
 chrono = { workspace = true }
 tokio = { workspace = true }
 yahoo_finance_api = { workspace = true }
