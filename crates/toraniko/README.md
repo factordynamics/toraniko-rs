@@ -39,7 +39,8 @@ Or with specific features:
 
 ```toml
 [dependencies]
-toraniko = { version = "0.1", default-features = false, features = ["styles", "model"] }
+toraniko = { version = "0.1", default-features = false, features = ["model"] }
+factors = "0.1"  # For style factor implementations
 ```
 
 ### Available Features
@@ -50,9 +51,10 @@ toraniko = { version = "0.1", default-features = false, features = ["styles", "m
 | `primitives` | Core type definitions |
 | `traits` | Trait abstractions (Factor, StyleFactor, ReturnsEstimator) |
 | `math` | Mathematical operations (WLS, winsorization, weights) |
-| `styles` | Style factor implementations (Momentum, Size, Value) |
 | `model` | Factor return estimation |
 | `utils` | Data utilities (fill, smooth, rank) |
+
+Note: Style factor implementations (Momentum, Size, Value) are now provided by the separate `factors` crate.
 
 ## Quick Start with Real Market Data
 
@@ -170,27 +172,34 @@ One-hot encoded sector classifications for the factor model regression:
 ### Computing Style Factor Scores
 
 ```rust,ignore
-use toraniko::styles::{MomentumFactor, SizeFactor, ValueFactor, MomentumConfig};
-use toraniko::traits::{Factor, StyleFactor};
+use factors::{Factor, FactorRegistry, FactorConfig};
 use polars::prelude::*;
+use chrono::NaiveDate;
 
-// Create factors with default configuration
-let momentum = MomentumFactor::new();
-let size = SizeFactor::new();
-let value = ValueFactor::new();
+// Create registry with default factors
+let registry = FactorRegistry::with_defaults();
 
-// Or customize the configuration
-let custom_momentum = MomentumFactor::with_config(MomentumConfig {
+// Get factors by name
+let momentum = registry.get("long_term_momentum").unwrap();
+let size = registry.get("log_market_cap").unwrap();
+let value = registry.get("book_to_market").unwrap();
+
+// Or create a custom registry with custom configuration
+let mut custom_registry = FactorRegistry::new();
+let custom_config = FactorConfig {
     trailing_days: 252,   // 1 year lookback
     half_life: 63,        // 3 month exponential decay
     lag: 20,              // Skip most recent month
     winsor_factor: 0.01,  // 1% winsorization
-});
+    ..Default::default()
+};
+custom_registry.register_with_config("custom_momentum", custom_config);
 
 // Compute scores from your data
-let mom_scores = momentum.compute_scores(returns_df.lazy())?;
-let sze_scores = size.compute_scores(mkt_cap_df.lazy())?;
-let val_scores = value.compute_scores(value_df.lazy())?;
+let date = NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
+let mom_scores = momentum.compute(&data.lazy(), date)?;
+let sze_scores = size.compute(&data.lazy(), date)?;
+let val_scores = value.compute(&data.lazy(), date)?;
 ```
 
 ### Estimating Factor Returns

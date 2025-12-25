@@ -7,12 +7,13 @@
 
 use std::{collections::HashMap, env};
 
+use chrono::NaiveDate;
+use factors::FactorRegistry;
 use polars::prelude::*;
 use time::{Duration, OffsetDateTime};
 use toraniko::{
     model::{EstimatorConfig, FactorReturnsEstimator, compute_attribution},
-    styles::{MomentumConfig, MomentumFactor, SizeFactor, ValueConfig, ValueFactor},
-    traits::{Factor, ReturnsEstimator, StyleFactor},
+    traits::ReturnsEstimator,
 };
 use yahoo_finance_api as yahoo;
 
@@ -263,19 +264,25 @@ async fn fetch_data(
 
 /// Compute style factors.
 fn compute_style_factors(data: &InputData) -> Result<DataFrame, Box<dyn std::error::Error>> {
-    // Size factor
-    let size_factor = SizeFactor::new();
-    let size_scores = size_factor.compute_scores(data.market_caps.clone())?.collect()?;
+    // Initialize factor registry with defaults
+    let registry = FactorRegistry::with_defaults();
 
-    // Value factor
-    let value_factor = ValueFactor::with_config(ValueConfig { winsorize_features: Some(0.01) });
-    let value_scores = value_factor.compute_scores(data.fundamentals.clone())?.collect()?;
+    // Get a sample date from the data for factor computation
+    let dates_col = data.raw_df.column("date")?;
+    let first_date = dates_col.get(0)?;
+    // Convert from polars Date to chrono NaiveDate
+    let date_i32 = first_date.try_extract::<i32>()?;
+    let date = NaiveDate::from_num_days_from_ce_opt(date_i32).ok_or("Invalid date")?;
 
-    // Momentum factor (shorter lookback for responsiveness)
-    let momentum_config =
-        MomentumConfig { trailing_days: 60, half_life: 30, lag: 5, winsor_factor: 0.01 };
-    let momentum_factor = MomentumFactor::with_config(momentum_config);
-    let momentum_scores = momentum_factor.compute_scores(data.returns.clone())?.collect()?;
+    // Get factors from registry
+    let size_factor = registry.get("market_cap").ok_or("Size factor not found")?;
+    let value_factor = registry.get("book_to_market").ok_or("Value factor not found")?;
+    let momentum_factor = registry.get("long_term_momentum").ok_or("Momentum factor not found")?;
+
+    // Compute factor scores
+    let size_scores = size_factor.compute(&data.market_caps.clone(), date)?;
+    let value_scores = value_factor.compute(&data.fundamentals.clone(), date)?;
+    let momentum_scores = momentum_factor.compute(&data.returns.clone(), date)?;
 
     // Join all scores
     let combined = size_scores

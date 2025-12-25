@@ -18,7 +18,6 @@ workspace = true
 toraniko-primitives = { workspace = true, optional = true }
 toraniko-traits = { workspace = true, optional = true }
 toraniko-math = { workspace = true, optional = true }
-toraniko-styles = { workspace = true, optional = true }
 toraniko-model = { workspace = true, optional = true }
 toraniko-utils = { workspace = true, optional = true }
 
@@ -27,6 +26,8 @@ polars = { workspace = true, features = ["strings", "csv", "fmt"], optional = tr
 tokio = { workspace = true, optional = true }
 yahoo_finance_api = { workspace = true, optional = true }
 time = { workspace = true, optional = true }
+chrono = { workspace = true, optional = true }
+factors = { workspace = true, optional = true }
 
 [dev-dependencies]
 polars = { workspace = true, features = ["strings", "csv", "fmt"] }
@@ -36,16 +37,16 @@ chrono = { workspace = true }
 tokio = { workspace = true }
 yahoo_finance_api = { workspace = true }
 time = { workspace = true }
+factors = { workspace = true }
 
 [features]
 default = ["full"]
-full = ["primitives", "traits", "math", "styles", "model", "utils"]
-cli = ["full", "dep:polars", "dep:tokio", "dep:yahoo_finance_api", "dep:time"]
+full = ["primitives", "traits", "math", "model", "utils"]
+cli = ["full", "dep:polars", "dep:tokio", "dep:yahoo_finance_api", "dep:time", "dep:chrono", "dep:factors"]
 
 primitives = ["dep:toraniko-primitives"]
 traits = ["dep:toraniko-traits"]
 math = ["dep:toraniko-math"]
-styles = ["dep:toraniko-styles"]
 model = ["dep:toraniko-model"]
 utils = ["dep:toraniko-utils"]
 

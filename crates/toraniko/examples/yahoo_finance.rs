@@ -10,12 +10,13 @@
 
 use std::collections::HashMap;
 
+use chrono::NaiveDate;
+use factors::FactorRegistry;
 use polars::prelude::*;
 use time::{Duration, OffsetDateTime};
 use toraniko::{
     model::{EstimatorConfig, FactorReturnsEstimator},
-    styles::{SizeFactor, ValueConfig, ValueFactor},
-    traits::{Factor, ReturnsEstimator, StyleFactor},
+    traits::ReturnsEstimator,
 };
 use yahoo_finance_api as yahoo;
 
@@ -179,30 +180,40 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("=== Computing Style Factors ===\n");
 
+    // Initialize factor registry
+    let registry = FactorRegistry::with_defaults();
+
+    // Get a reference date from the data for factor computation
+    let dates_col = mkt_cap_df.column("date")?;
+    let first_date = dates_col.get(0)?;
+    // Convert from polars Date to chrono NaiveDate
+    let date_i32 = first_date.try_extract::<i32>()?;
+    let date = NaiveDate::from_num_days_from_ce_opt(date_i32).ok_or("Invalid date")?;
+
     // Size factor (SMB - Small Minus Big)
-    let size = SizeFactor::new();
+    let size = registry.get("market_cap").ok_or("Size factor not found")?;
     println!("Computing {} scores...", size.name());
-    let size_scores = size.compute_scores(mkt_cap_df.clone().lazy())?.collect()?;
+    let size_scores = size.compute(&mkt_cap_df.clone().lazy(), date)?;
     println!("Size scores sample:");
     println!("{}\n", size_scores.head(Some(5)));
 
     // Value factor (composite of valuation ratios)
-    let value = ValueFactor::with_config(ValueConfig { winsorize_features: Some(0.01) });
+    let value = registry.get("book_to_market").ok_or("Value factor not found")?;
     println!("Computing {} scores...", value.name());
-    let value_scores = value.compute_scores(value_df.lazy())?.collect()?;
+    let value_scores = value.compute(&value_df.lazy(), date)?;
     println!("Value scores sample:");
     println!("{}\n", value_scores.head(Some(5)));
 
     // Print summary statistics
     println!("=== Style Score Statistics ===\n");
-    for (name, df) in [("sze_score", &size_scores), ("val_score", &value_scores)] {
+    for (name, df) in [("market_cap", &size_scores), ("book_to_market", &value_scores)] {
         let score_col = df.column(name)?.f64()?;
         let mean = score_col.mean().unwrap_or(0.0);
         let std_val = score_col.std(1).unwrap_or(0.0);
         let min = score_col.min().unwrap_or(0.0);
         let max = score_col.max().unwrap_or(0.0);
         println!(
-            "{:12} | mean: {:8.4} | std: {:7.4} | min: {:8.4} | max: {:7.4}",
+            "{:16} | mean: {:8.4} | std: {:7.4} | min: {:8.4} | max: {:7.4}",
             name, mean, std_val, min, max
         );
     }

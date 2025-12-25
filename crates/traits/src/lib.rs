@@ -4,7 +4,19 @@
 #![cfg_attr(not(test), warn(unused_crate_dependencies))]
 
 mod factor;
-pub use factor::{Factor, FactorError, FactorKind, SectorFactor, StyleFactor};
+pub use factor::{
+    // Re-exported from factors crate
+    ConfigurableFactor,
+    DataFrequency,
+    Factor,
+    FactorCategory,
+    FactorConfig,
+    FactorError,
+    // Toraniko-specific types
+    FactorKind,
+    SectorFactor,
+    StyleFactor,
+};
 
 mod transform;
 pub use transform::{CrossSectionTransform, TimeSeriesTransform, TransformError};

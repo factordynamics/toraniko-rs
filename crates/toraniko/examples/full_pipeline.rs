@@ -13,12 +13,13 @@
 
 use std::collections::HashMap;
 
+use chrono::NaiveDate;
+use factors::FactorRegistry;
 use polars::prelude::*;
 use time::{Duration, OffsetDateTime};
 use toraniko::{
     model::{EstimatorConfig, FactorReturnsEstimator},
-    styles::{MomentumConfig, MomentumFactor, SizeFactor, ValueConfig, ValueFactor},
-    traits::{Factor, ReturnsEstimator, StyleFactor},
+    traits::ReturnsEstimator,
 };
 use yahoo_finance_api as yahoo;
 
@@ -253,35 +254,41 @@ fn compute_style_factors(data: &InputData) -> Result<DataFrame, Box<dyn std::err
          ================================================================================\n"
     );
 
+    // Initialize factor registry
+    let registry = FactorRegistry::with_defaults();
+
+    // Get a reference date from the data for factor computation
+    let dates_col = data.raw_df.column("date")?;
+    let first_date = dates_col.get(0)?;
+    // Convert from polars Date to chrono NaiveDate
+    let date_i32 = first_date.try_extract::<i32>()?;
+    let date = NaiveDate::from_num_days_from_ce_opt(date_i32).ok_or("Invalid date")?;
+
     // SIZE FACTOR
     println!("[*] Computing SIZE factor (Small-Minus-Big)...");
-    let size_factor = SizeFactor::new();
-    println!("    Required columns: {:?}", size_factor.required_columns());
+    let size_factor = registry.get("market_cap").ok_or("Size factor not found")?;
+    println!("    Factor: {}", size_factor.name());
+    println!("    Description: {}", size_factor.description());
 
-    let size_scores = size_factor.compute_scores(data.market_caps.clone())?.collect()?;
+    let size_scores = size_factor.compute(&data.market_caps.clone(), date)?;
     println!("    Computed {} size scores\n", size_scores.height());
 
     // VALUE FACTOR
     println!("[*] Computing VALUE factor (composite of B/P, S/P, CF/P proxies)...");
-    let value_factor = ValueFactor::with_config(ValueConfig { winsorize_features: Some(0.01) });
-    println!("    Required columns: {:?}", value_factor.required_columns());
+    let value_factor = registry.get("book_to_market").ok_or("Value factor not found")?;
+    println!("    Factor: {}", value_factor.name());
+    println!("    Description: {}", value_factor.description());
 
-    let value_scores = value_factor.compute_scores(data.fundamentals.clone())?.collect()?;
+    let value_scores = value_factor.compute(&data.fundamentals.clone(), date)?;
     println!("    Computed {} value scores\n", value_scores.height());
 
     // MOMENTUM FACTOR
     println!("[*] Computing MOMENTUM factor (trailing returns with lag)...");
-    let momentum_config = MomentumConfig {
-        trailing_days: 60, // ~3 months lookback
-        half_life: 30,
-        lag: 5,
-        winsor_factor: 0.01,
-    };
-    let momentum_factor = MomentumFactor::with_config(momentum_config);
-    println!("    Required columns: {:?}", momentum_factor.required_columns());
-    println!("    Config: trailing_days=60, half_life=30, lag=5");
+    let momentum_factor = registry.get("long_term_momentum").ok_or("Momentum factor not found")?;
+    println!("    Factor: {}", momentum_factor.name());
+    println!("    Description: {}", momentum_factor.description());
 
-    let momentum_scores = momentum_factor.compute_scores(data.returns.clone())?.collect()?;
+    let momentum_scores = momentum_factor.compute(&data.returns.clone(), date)?;
     println!(
         "    Computed {} momentum scores (some null due to lookback)\n",
         momentum_scores.height()
@@ -466,7 +473,7 @@ fn print_style_scores_sample(scores: &DataFrame) -> Result<(), Box<dyn std::erro
     // Show score distributions
     println!("[*] Style score summary statistics:\n");
 
-    for col_name in ["sze_score", "val_score", "mom_score"] {
+    for col_name in ["market_cap", "book_to_market", "long_term_momentum"] {
         if let Ok(col) = scores.column(col_name)
             && let Ok(f64_col) = col.f64()
         {
@@ -477,7 +484,7 @@ fn print_style_scores_sample(scores: &DataFrame) -> Result<(), Box<dyn std::erro
             let null_count = f64_col.null_count();
 
             println!(
-                "    {col_name:12} | mean: {:>8.4} | std: {:>7.4} | min: {:>8.4} | max: {:>7.4} | nulls: {}",
+                "    {col_name:20} | mean: {:>8.4} | std: {:>7.4} | min: {:>8.4} | max: {:>7.4} | nulls: {}",
                 mean, std, min, max, null_count
             );
         }

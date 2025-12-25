@@ -16,9 +16,6 @@ pub use toraniko_traits as traits;
 #[cfg(feature = "math")]
 #[doc(inline)]
 pub use toraniko_math as math;
-#[cfg(feature = "styles")]
-#[doc(inline)]
-pub use toraniko_styles as styles;
 #[cfg(feature = "model")]
 #[doc(inline)]
 pub use toraniko_model as model;
@@ -26,6 +23,10 @@ pub use toraniko_model as model;
 #[doc(inline)]
 pub use toraniko_utils as utils;
 // CLI feature dependencies - these are used by the analyze binary, not the library itself
+#[cfg(feature = "cli")]
+use chrono as _;
+#[cfg(feature = "cli")]
+use factors as _;
 #[cfg(feature = "cli")]
 use polars as _;
 #[cfg(feature = "cli")]

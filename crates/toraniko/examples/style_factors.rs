@@ -8,12 +8,10 @@
 
 use std::collections::HashMap;
 
+use chrono::NaiveDate;
+use factors::FactorRegistry;
 use polars::prelude::*;
 use time::{Duration, OffsetDateTime};
-use toraniko::{
-    styles::{MomentumConfig, MomentumFactor, SizeFactor, ValueConfig, ValueFactor},
-    traits::{Factor, StyleFactor},
-};
 use yahoo_finance_api as yahoo;
 
 /// Stock universe
@@ -122,31 +120,34 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("Built DataFrames with {} observations\n", returns_df.height());
 
+    // Initialize factor registry
+    let registry = FactorRegistry::with_defaults();
+
+    // Get a reference date from the data for factor computation
+    let dates_col = returns_df.column("date")?;
+    let first_date = dates_col.get(0)?;
+    // Convert from polars Date to chrono NaiveDate
+    let date_i32 = first_date.try_extract::<i32>()?;
+    let date = NaiveDate::from_num_days_from_ce_opt(date_i32).ok_or("Invalid date")?;
+
     // =========================================================================
     // MOMENTUM FACTOR
     // =========================================================================
     println!("=== Momentum Factor ===\n");
 
-    let momentum_config = MomentumConfig {
-        trailing_days: 60, // ~3 months lookback
-        half_life: 30,     // 1 month exponential decay
-        lag: 5,            // Skip most recent week
-        winsor_factor: 0.01,
-    };
-    let momentum = MomentumFactor::with_config(momentum_config);
+    let momentum = registry.get("long_term_momentum").ok_or("Momentum factor not found")?;
 
     println!("Factor name: {}", momentum.name());
-    println!("Factor kind: {:?}", momentum.kind());
-    println!("Required columns: {:?}", momentum.required_columns());
-    println!("Config: trailing_days=60, half_life=30, lag=5");
+    println!("Factor category: {:?}", momentum.category());
+    println!("Description: {}", momentum.description());
 
-    let momentum_scores = momentum.compute_scores(returns_df.lazy())?.collect()?;
+    let momentum_scores = momentum.compute(&returns_df.lazy(), date)?;
 
     println!("\nMomentum scores (sample - last 10 rows):");
     println!("{}\n", momentum_scores.tail(Some(10)));
 
     // Print statistics
-    if let Ok(score_col) = momentum_scores.column("mom_score")
+    if let Ok(score_col) = momentum_scores.column("long_term_momentum")
         && let Ok(f64_col) = score_col.f64()
     {
         let mean = f64_col.mean().unwrap_or(0.0);
@@ -163,20 +164,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // =========================================================================
     println!("\n=== Size Factor ===\n");
 
-    let size = SizeFactor::new();
+    let size = registry.get("market_cap").ok_or("Size factor not found")?;
 
     println!("Factor name: {}", size.name());
-    println!("Factor kind: {:?}", size.kind());
-    println!("Required columns: {:?}", size.required_columns());
+    println!("Factor category: {:?}", size.category());
+    println!("Description: {}", size.description());
 
-    let size_scores = size.compute_scores(mkt_cap_df.lazy())?.collect()?;
+    let size_scores = size.compute(&mkt_cap_df.lazy(), date)?;
 
     println!("\nSize scores (sample - last 10 rows):");
     println!("(negative = large cap, positive = small cap)");
     println!("{}\n", size_scores.tail(Some(10)));
 
     // Print statistics
-    if let Ok(score_col) = size_scores.column("sze_score")
+    if let Ok(score_col) = size_scores.column("market_cap")
         && let Ok(f64_col) = score_col.f64()
     {
         let mean = f64_col.mean().unwrap_or(0.0);
@@ -189,21 +190,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // =========================================================================
     println!("\n=== Value Factor ===\n");
 
-    let value_config = ValueConfig { winsorize_features: Some(0.01) };
-    let value = ValueFactor::with_config(value_config);
+    let value = registry.get("book_to_market").ok_or("Value factor not found")?;
 
     println!("Factor name: {}", value.name());
-    println!("Factor kind: {:?}", value.kind());
-    println!("Required columns: {:?}", value.required_columns());
+    println!("Factor category: {:?}", value.category());
+    println!("Description: {}", value.description());
 
-    let value_scores = value.compute_scores(value_df.lazy())?.collect()?;
+    let value_scores = value.compute(&value_df.lazy(), date)?;
 
     println!("\nValue scores (sample - last 10 rows):");
     println!("(composite of book/price, sales/price, cf/price proxies)");
     println!("{}\n", value_scores.tail(Some(10)));
 
     // Print statistics
-    if let Ok(score_col) = value_scores.column("val_score")
+    if let Ok(score_col) = value_scores.column("book_to_market")
         && let Ok(f64_col) = score_col.f64()
     {
         let mean = f64_col.mean().unwrap_or(0.0);

@@ -11,12 +11,13 @@
 
 use std::collections::HashMap;
 
+use chrono::NaiveDate;
+use factors::FactorRegistry;
 use polars::prelude::*;
 use time::{Duration, OffsetDateTime};
 use toraniko::{
     model::{EstimatorConfig, FactorReturnsEstimator},
-    styles::{SizeFactor, ValueConfig, ValueFactor},
-    traits::{Factor, ReturnsEstimator, StyleFactor},
+    traits::ReturnsEstimator,
 };
 use yahoo_finance_api as yahoo;
 
@@ -161,14 +162,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("=== Computing Style Factor Scores ===\n");
 
+    // Initialize factor registry
+    let registry = FactorRegistry::with_defaults();
+
+    // Get a reference date from the data for factor computation
+    let dates_col = mkt_cap_df.column("date")?;
+    let first_date = dates_col.get(0)?;
+    // Convert from polars Date to chrono NaiveDate
+    let date_i32 = first_date.try_extract::<i32>()?;
+    let date = NaiveDate::from_num_days_from_ce_opt(date_i32).ok_or("Invalid date")?;
+
     // Size factor
-    let size = SizeFactor::new();
-    let size_scores = size.compute_scores(mkt_cap_df.clone().lazy())?.collect()?;
+    let size = registry.get("market_cap").ok_or("Size factor not found")?;
+    let size_scores = size.compute(&mkt_cap_df.clone().lazy(), date)?;
     println!("Computed {} size scores", size_scores.height());
 
     // Value factor
-    let value = ValueFactor::with_config(ValueConfig { winsorize_features: Some(0.01) });
-    let value_scores = value.compute_scores(value_input_df.lazy())?.collect()?;
+    let value = registry.get("book_to_market").ok_or("Value factor not found")?;
+    let value_scores = value.compute(&value_input_df.lazy(), date)?;
     println!("Computed {} value scores\n", value_scores.height());
 
     // Combine style scores

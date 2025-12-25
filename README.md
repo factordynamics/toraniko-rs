@@ -52,7 +52,7 @@ Run `just bench` for full benchmarks.
 | `toraniko-primitives` | Core type definitions (Asset, Symbol, FactorReturns, etc.) |
 | `toraniko-traits` | Trait abstractions (Factor, StyleFactor, ReturnsEstimator) |
 | `toraniko-math` | Mathematical operations (WLS, winsorization, weights) |
-| `toraniko-styles` | Style factor implementations (Momentum, Size, Value) |
+| `factors` | Style factor implementations (Momentum, Size, Value) with registry |
 | `toraniko-model` | Factor return estimation |
 | `toraniko-utils` | Data utilities (fill, smooth, rank) |
 
@@ -63,7 +63,7 @@ Add to your `Cargo.toml`:
 ```toml
 [dependencies]
 toraniko-model = "0.1"
-toraniko-styles = "0.1"
+factors = "0.1"
 toraniko-utils = "0.1"
 ```
 
@@ -72,19 +72,23 @@ toraniko-utils = "0.1"
 ### Computing Style Factor Scores
 
 ```rust
-use toraniko_styles::{MomentumFactor, SizeFactor, ValueFactor};
-use toraniko_traits::Factor;
+use factors::{Factor, FactorRegistry};
 use polars::prelude::*;
+use chrono::NaiveDate;
 
-// Create factors
-let momentum = MomentumFactor::new();
-let size = SizeFactor::new();
-let value = ValueFactor::new();
+// Create registry with default factors
+let registry = FactorRegistry::with_defaults();
+
+// Get factors by name
+let momentum = registry.get("long_term_momentum").unwrap();
+let size = registry.get("log_market_cap").unwrap();
+let value = registry.get("book_to_market").unwrap();
 
 // Compute scores from your data
-let mom_scores = momentum.compute_scores(returns_df.lazy())?;
-let sze_scores = size.compute_scores(mkt_cap_df.lazy())?;
-let val_scores = value.compute_scores(value_df.lazy())?;
+let date = NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
+let mom_scores = momentum.compute(&data.lazy(), date)?;
+let sze_scores = size.compute(&data.lazy(), date)?;
+let val_scores = value.compute(&data.lazy(), date)?;
 ```
 
 ### Estimating Factor Returns
@@ -111,17 +115,22 @@ let (factor_returns_df, residuals_df) = estimator.estimate(
 ### Custom Factor Configuration
 
 ```rust
-use toraniko_styles::{MomentumConfig, MomentumFactor};
-use toraniko_traits::StyleFactor;
+use factors::{Factor, FactorRegistry, FactorConfig};
 
-let config = MomentumConfig {
+// Create registry
+let mut registry = FactorRegistry::new();
+
+// Add custom configured factor
+let config = FactorConfig {
     trailing_days: 252,   // 1 year lookback
     half_life: 63,        // 3 month decay
     lag: 20,              // Skip most recent month
     winsor_factor: 0.01,
+    ..Default::default()
 };
 
-let momentum = MomentumFactor::with_config(config);
+registry.register_with_config("custom_momentum", config);
+let momentum = registry.get("custom_momentum").unwrap();
 ```
 
 ### Data Utilities
